@@ -18,7 +18,7 @@ import {
   Inbox,
 } from "lucide-react"
 import Quiz from "../components/Quiz"
-import MinijuegoAdivinaNumero from "../components/MinijuegoAdivinaNumero"
+import MinijuegoCodigo from "../components/MinijuegoCodigo"
 import EjerciciosOrdenarGenerico from "../components/generico/EjerciciosOrdenarGenerico"
 import EjerciciosPythonGenerico from "../components/generico/EjerciciosPythonGenerico"
 import ProgressBar from "../components/ProgressBar"
@@ -83,6 +83,7 @@ function SesionGenerica() {
 
   const temas = sesion?.contenido?.temas || []
   const proyecto = sesion?.contenido?.proyecto || null
+  const minijuegoConfig = sesion?.contenido?.minijuego || null
   const progresoTemas = datos.temas || {}
   const minijuego = datos.minijuego || null
 
@@ -123,12 +124,20 @@ function SesionGenerica() {
     return !temaCompletado(temas[indice - 1].id)
   }
 
+  function temasCompletosTodos() {
+    return temas.length > 0 && temas.every((tema) => temaCompletado(tema.id))
+  }
+
   function minijuegoBloqueado() {
-    return !temas.every((tema) => temaCompletado(tema.id))
+    return !temasCompletosTodos()
   }
 
   function proyectoBloqueado() {
-    return !minijuego
+    // El proyecto necesita todos los temas terminados; y si la sesión tiene
+    // minijuego configurado, también haber terminado el minijuego.
+    if (!temasCompletosTodos()) return true
+    if (minijuegoConfig && !minijuego) return true
+    return false
   }
 
   function guardarQuiz(idTema, resultado) {
@@ -334,7 +343,7 @@ function SesionGenerica() {
                   </p>
                   <h2>
                     {seccionActiva === "minijuego"
-                      ? "Adivina el número"
+                      ? minijuegoConfig?.titulo || "Boss Level"
                       : seccionActiva === "proyecto"
                       ? proyecto?.titulo || "Proyecto de la sesión"
                       : temaActual?.titulo}
@@ -414,7 +423,8 @@ function SesionGenerica() {
                         <p>Intentos: {minijuego.intentos}</p>
                       </div>
                     ) : (
-                      <MinijuegoAdivinaNumero
+                      <MinijuegoCodigo
+                        config={minijuegoConfig}
                         onFinish={(resultado) => guardarMinijuego(resultado)}
                       />
                     )}
@@ -575,38 +585,49 @@ function SesionGenerica() {
         </section>
 
         <section className="special-grid">
-          <article className="special-card boss">
-            <div className="special-card-header">
-              <div className="special-icon">
-                <Gamepad2 aria-hidden="true" />
-              </div>
-              <h2>Adivina el número</h2>
-            </div>
-
-            <h3>Minijuego integrador de la sesión</h3>
-            <p>Se desbloquea cuando completes todos los temas de la sesión.</p>
-
-            <button
-              className="btn btn-primary"
-              disabled={minijuegoBloqueado()}
-              onClick={() => {
-                if (minijuegoBloqueado()) return
-                setSeccionActiva("minijuego")
-              }}
-            >
-              {minijuegoBloqueado() ? (
-                <>
-                  <Lock aria-hidden="true" />
-                  Bloqueado
-                </>
-              ) : (
-                <>
+          {minijuegoConfig && (
+            <article className="special-card boss">
+              <div className="special-card-header">
+                <div className="special-icon">
                   <Gamepad2 aria-hidden="true" />
-                  Iniciar minijuego
-                </>
-              )}
-            </button>
-          </article>
+                </div>
+                <h2>{minijuegoConfig.titulo || "Boss Level"}</h2>
+              </div>
+
+              <h3>Minijuego integrador de la sesión</h3>
+              <p>
+                {minijuego
+                  ? `Completado · ${minijuego.puntaje} pts`
+                  : "Reto de código. Se desbloquea cuando completes todos los temas de la sesión."}
+              </p>
+
+              <button
+                className={`btn ${minijuego ? "btn-success" : "btn-primary"}`}
+                disabled={minijuegoBloqueado()}
+                onClick={() => {
+                  if (minijuegoBloqueado()) return
+                  setSeccionActiva("minijuego")
+                }}
+              >
+                {minijuego ? (
+                  <>
+                    <CheckCircle2 aria-hidden="true" />
+                    Minijuego completado
+                  </>
+                ) : minijuegoBloqueado() ? (
+                  <>
+                    <Lock aria-hidden="true" />
+                    Bloqueado
+                  </>
+                ) : (
+                  <>
+                    <Gamepad2 aria-hidden="true" />
+                    Iniciar minijuego
+                  </>
+                )}
+              </button>
+            </article>
+          )}
 
           {proyecto && (
             <article className="special-card final">
@@ -618,7 +639,11 @@ function SesionGenerica() {
               </div>
 
               <h3>Proyecto integrador de la sesión</h3>
-              <p>Se desbloquea al terminar el minijuego.</p>
+              <p>
+                {minijuegoConfig
+                  ? "Se desbloquea al terminar el minijuego."
+                  : "Se desbloquea al completar todos los temas de la sesión."}
+              </p>
 
               <button
                 className="btn btn-primary"

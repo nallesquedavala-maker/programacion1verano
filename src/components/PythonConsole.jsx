@@ -17,11 +17,13 @@ function PythonConsole({ ejercicio, onFinish, modoPrueba = false }) {
   const [cargando, setCargando] = useState(true)
   const [ejecutando, setEjecutando] = useState(false)
   const [resultado, setResultado] = useState(null)
+  const [intentos, setIntentos] = useState(0)
 
   useEffect(() => {
     setCodigo(ejercicio.codigoInicial || "")
     setSalida("")
     setResultado(null)
+    setIntentos(0)
   }, [ejercicio.id])
 
   useEffect(() => {
@@ -48,6 +50,7 @@ function PythonConsole({ ejercicio, onFinish, modoPrueba = false }) {
     setEjecutando(true)
     setResultado(null)
     setSalida("")
+    setIntentos((n) => n + 1)
 
     let salidaCapturada = ""
 
@@ -154,7 +157,7 @@ pyodide.setStdin({
         </button>
 
         {resultado === "correcto" && (
-          <button className="btn btn-save-exercise" onClick={() => onFinish?.()}>
+          <button className="btn btn-save-exercise" onClick={() => onFinish?.({ intentos })}>
             <Save aria-hidden="true" />
             Guardar ejercicio
           </button>

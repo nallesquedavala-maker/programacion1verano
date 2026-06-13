@@ -69,6 +69,27 @@ function nuevoItemPython() {
   }
 }
 
+function minijuegoVacio() {
+  return {
+    titulo: "",
+    descripcion: "",
+    codigoInicial: "",
+    entrada: "",
+    salidaEsperada: "",
+  }
+}
+
+function minijuegoTieneContenido(minijuego) {
+  return Boolean(
+    minijuego &&
+      (minijuego.titulo?.trim() ||
+        minijuego.descripcion?.trim() ||
+        minijuego.codigoInicial?.trim() ||
+        minijuego.entrada?.trim() ||
+        minijuego.salidaEsperada?.trim())
+  )
+}
+
 // Convierte el contenido guardado (con tarjetas/ordenCorrecto) al formato
 // editable (pasos como texto) y viceversa.
 function contenidoAFormulario(contenido) {
@@ -98,7 +119,17 @@ function contenidoAFormulario(contenido) {
       }
     : { titulo: "", descripcion: "", requisitos: "" }
 
-  return { temas, proyecto }
+  const minijuego = contenido?.minijuego
+    ? {
+        titulo: contenido.minijuego.titulo || "",
+        descripcion: contenido.minijuego.descripcion || "",
+        codigoInicial: contenido.minijuego.codigoInicial || "",
+        entrada: contenido.minijuego.entrada || "",
+        salidaEsperada: contenido.minijuego.salidaEsperada || "",
+      }
+    : minijuegoVacio()
+
+  return { temas, proyecto, minijuego }
 }
 
 function formularioAContenido(formulario) {
@@ -143,7 +174,21 @@ function formularioAContenido(formulario) {
       }
     : null
 
-  return { temas, ...(proyecto ? { proyecto } : {}) }
+  const minijuego = minijuegoTieneContenido(formulario.minijuego)
+    ? {
+        titulo: formulario.minijuego.titulo.trim(),
+        descripcion: formulario.minijuego.descripcion,
+        codigoInicial: formulario.minijuego.codigoInicial,
+        entrada: formulario.minijuego.entrada,
+        salidaEsperada: formulario.minijuego.salidaEsperada,
+      }
+    : null
+
+  return {
+    temas,
+    ...(proyecto ? { proyecto } : {}),
+    ...(minijuego ? { minijuego } : {}),
+  }
 }
 
 function EditorSesion() {
@@ -154,8 +199,10 @@ function EditorSesion() {
   const [formulario, setFormulario] = useState({
     temas: [],
     proyecto: { titulo: "", descripcion: "", requisitos: "" },
+    minijuego: minijuegoVacio(),
   })
   const [temaAbierto, setTemaAbierto] = useState(null)
+  const [probandoMinijuego, setProbandoMinijuego] = useState(false)
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
@@ -430,9 +477,179 @@ function EditorSesion() {
                   />
                 </label>
               </div>
+
+              <h3 className="editor-section-title">
+                Minijuego / Boss Level (opcional)
+              </h3>
+
+              <div className="editor-note">
+                <Info aria-hidden="true" />
+                Si dejas estos campos vacíos, la sesión no mostrará ningún
+                minijuego. Si lo llenas, el alumno deberá escribir código,
+                ejecutarlo en la plataforma y se calificará comparando su salida
+                con la salida esperada.
+              </div>
+
+              <div className="editor-card">
+                <div className="editor-question-header">
+                  <input
+                    className="text-input"
+                    value={formulario.minijuego.titulo}
+                    onChange={(e) =>
+                      setFormulario((previo) => ({
+                        ...previo,
+                        minijuego: {
+                          ...previo.minijuego,
+                          titulo: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Título del minijuego (Ej. Boss: Calculadora)"
+                  />
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setProbandoMinijuego(true)}
+                    disabled={!minijuegoTieneContenido(formulario.minijuego)}
+                    title="Probar el minijuego como lo verá el alumno"
+                  >
+                    <Play aria-hidden="true" />
+                    Probar
+                  </button>
+                </div>
+
+                <label className="field">
+                  <span className="field-label">Instrucción para el alumno</span>
+                  <textarea
+                    className="text-area"
+                    rows={2}
+                    value={formulario.minijuego.descripcion}
+                    onChange={(e) =>
+                      setFormulario((previo) => ({
+                        ...previo,
+                        minijuego: {
+                          ...previo.minijuego,
+                          descripcion: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Ej. Escribe un programa que imprima la suma de 5 y 7"
+                  />
+                </label>
+
+                <div className="editor-grid-2">
+                  <label className="field">
+                    <span className="field-label">Código inicial (opcional)</span>
+                    <textarea
+                      className="text-area mono"
+                      rows={3}
+                      value={formulario.minijuego.codigoInicial}
+                      onChange={(e) =>
+                        setFormulario((previo) => ({
+                          ...previo,
+                          minijuego: {
+                            ...previo.minijuego,
+                            codigoInicial: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="# Código con el que inicia el editor"
+                    />
+                  </label>
+
+                  <label className="field">
+                    <span className="field-label">
+                      Entradas para input() (una por línea, opcional)
+                    </span>
+                    <textarea
+                      className="text-area mono"
+                      rows={3}
+                      value={formulario.minijuego.entrada}
+                      onChange={(e) =>
+                        setFormulario((previo) => ({
+                          ...previo,
+                          minijuego: {
+                            ...previo.minijuego,
+                            entrada: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder={"Ana\n20"}
+                    />
+                  </label>
+                </div>
+
+                <label className="field">
+                  <span className="field-label">
+                    Salida esperada EXACTA (con esto se califica)
+                  </span>
+                  <textarea
+                    className="text-area mono"
+                    rows={3}
+                    value={formulario.minijuego.salidaEsperada}
+                    onChange={(e) =>
+                      setFormulario((previo) => ({
+                        ...previo,
+                        minijuego: {
+                          ...previo.minijuego,
+                          salidaEsperada: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder={"12"}
+                  />
+                </label>
+              </div>
             </>
           )}
         </>
+      )}
+
+      {probandoMinijuego && (
+        <div
+          className="modal-overlay"
+          onClick={(evento) => {
+            if (evento.target === evento.currentTarget)
+              setProbandoMinijuego(false)
+          }}
+        >
+          <section className="modal-panel" role="dialog" aria-modal="true">
+            <button
+              className="panel-close"
+              onClick={() => setProbandoMinijuego(false)}
+              aria-label="Cerrar prueba"
+            >
+              <X aria-hidden="true" />
+            </button>
+
+            <header className="modal-header">
+              <div className="modal-header-icon">
+                <Play aria-hidden="true" />
+              </div>
+              <div>
+                <p className="modal-header-eyebrow">
+                  Prueba del minijuego (sin publicar)
+                </p>
+                <h2>{formulario.minijuego.titulo || "Boss Level"}</h2>
+              </div>
+            </header>
+
+            <div className="modal-body">
+              <PythonConsole
+                modoPrueba
+                ejercicio={{
+                  id: "prueba-minijuego",
+                  titulo: formulario.minijuego.titulo || "Boss Level",
+                  descripcion: formulario.minijuego.descripcion || "",
+                  codigoInicial: formulario.minijuego.codigoInicial || "",
+                  entrada: formulario.minijuego.entrada || "",
+                  salidaEsperada: formulario.minijuego.salidaEsperada || "",
+                  validar: ({ salida }) =>
+                    salidaCoincide(salida, formulario.minijuego.salidaEsperada),
+                }}
+              />
+            </div>
+          </section>
+        </div>
       )}
     </section>
   )
