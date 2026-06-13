@@ -66,18 +66,51 @@ function PythonConsole({ ejercicio, onFinish, modoPrueba = false }) {
       },
     })
 
-    const entradas = (ejercicio.entrada || "")
-  .split("\n")
+    // Restaura el input() original por si una corrida interactiva previa lo
+    // reemplazó, para no arrastrar estado entre ejecuciones.
+    await pyodide.runPythonAsync(
+      "import builtins\n" +
+        "if hasattr(builtins, '_input_original'):\n" +
+        "    builtins.input = builtins._input_original\n" +
+        "else:\n" +
+        "    builtins._input_original = builtins.input\n"
+    )
 
-let indiceEntrada = 0
+    const tienePreset = (ejercicio.entrada || "").trim() !== ""
 
-pyodide.setStdin({
-  stdin: () => {
-    const valor = entradas[indiceEntrada] || ""
-    indiceEntrada += 1
-    return valor
-      },
-    })
+    if (tienePreset) {
+      // Entrada predefinida por el profesor: se usa para calificar de forma
+      // determinista (input() la lee en orden, una línea por llamada).
+      const lineasPreset = (ejercicio.entrada || "")
+        .replace(/\r\n/g, "\n")
+        .split("\n")
+      let indiceEntrada = 0
+
+      pyodide.setStdin({
+        stdin: () => {
+          const valor = lineasPreset[indiceEntrada] ?? ""
+          indiceEntrada += 1
+          return valor
+        },
+      })
+    } else {
+      // Sin entrada predefinida: el alumno teclea de forma interactiva. El
+      // texto del input() aparece en el recuadro, no en la salida, para no
+      // afectar la comparación con la salida esperada.
+      pyodide.globals.set("__leerEntrada", (prompt) => {
+        const respuesta = window.prompt(
+          (prompt && String(prompt)) || "El programa pide un dato. Escríbelo:"
+        )
+        return respuesta === null ? "" : respuesta
+      })
+
+      await pyodide.runPythonAsync(
+        "import builtins\n" +
+          "def _input_interactivo(prompt=''):\n" +
+          "    return __leerEntrada(str(prompt))\n" +
+          "builtins.input = _input_interactivo\n"
+      )
+    }
 
     try {
       await pyodide.runPythonAsync(codigo)
