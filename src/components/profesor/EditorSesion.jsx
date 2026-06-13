@@ -580,7 +580,8 @@ function EditorSesion() {
 
                 <label className="field">
                   <span className="field-label">
-                    Salida esperada EXACTA (con esto se califica)
+                    Salida esperada (con esto se califica · si hay varias
+                    válidas, sepáralas con una línea de ---)
                   </span>
                   <textarea
                     className="text-area mono"
@@ -595,7 +596,9 @@ function EditorSesion() {
                         },
                       }))
                     }
-                    placeholder={"12"}
+                    placeholder={
+                      "La computadora eligió: piedra\nEmpate\n---\nLa computadora eligió: papel\nPerdiste\n---\nLa computadora eligió: tijera\nGanaste"
+                    }
                   />
                 </label>
               </div>
@@ -1040,7 +1043,8 @@ function TemaEditor({ tema, indice, abierto, onToggle, onChange, onEliminar }) {
 
                 <label className="field">
                   <span className="field-label">
-                    Salida esperada EXACTA (con esto se califica)
+                    Salida esperada (con esto se califica · si hay varias
+                    válidas, sepáralas con una línea de ---)
                   </span>
                   <textarea
                     className="text-area mono"
