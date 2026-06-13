@@ -10,9 +10,13 @@ import {
   Eye,
   EyeOff,
   Info,
+  Play,
+  X,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { NOMBRES_ICONOS, obtenerIcono } from "../../data/iconos"
+import PythonConsole from "../PythonConsole"
+import { salidaCoincide } from "../../utils/validarSalida"
 
 const IDS_SESIONES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
@@ -436,6 +440,7 @@ function EditorSesion() {
 
 function TemaEditor({ tema, indice, abierto, onToggle, onChange, onEliminar }) {
   const IconoTema = obtenerIcono(tema.icono)
+  const [pruebaItem, setPruebaItem] = useState(null)
 
   function actualizarPregunta(indicePregunta, cambios) {
     onChange({
@@ -742,6 +747,14 @@ function TemaEditor({ tema, indice, abierto, onToggle, onChange, onEliminar }) {
                     placeholder="Título del ejercicio"
                   />
                   <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setPruebaItem(indiceItem)}
+                    title="Probar este ejercicio como lo verá el alumno"
+                  >
+                    <Play aria-hidden="true" />
+                    Probar
+                  </button>
+                  <button
                     className="icon-button danger"
                     onClick={() =>
                       onChange({
@@ -855,6 +868,54 @@ function TemaEditor({ tema, indice, abierto, onToggle, onChange, onEliminar }) {
               Eliminar tema {indice + 1}
             </button>
           </div>
+        </div>
+      )}
+
+      {pruebaItem !== null && tema.ejercicios.items[pruebaItem] && (
+        <div
+          className="modal-overlay"
+          onClick={(evento) => {
+            if (evento.target === evento.currentTarget) setPruebaItem(null)
+          }}
+        >
+          <section className="modal-panel" role="dialog" aria-modal="true">
+            <button
+              className="panel-close"
+              onClick={() => setPruebaItem(null)}
+              aria-label="Cerrar prueba"
+            >
+              <X aria-hidden="true" />
+            </button>
+
+            <header className="modal-header">
+              <div className="modal-header-icon">
+                <Play aria-hidden="true" />
+              </div>
+              <div>
+                <p className="modal-header-eyebrow">Prueba del profesor (sin publicar)</p>
+                <h2>{tema.ejercicios.items[pruebaItem].titulo || "Ejercicio sin título"}</h2>
+              </div>
+            </header>
+
+            <div className="modal-body">
+              <PythonConsole
+                modoPrueba
+                ejercicio={{
+                  id: `prueba-${pruebaItem}`,
+                  titulo: tema.ejercicios.items[pruebaItem].titulo || "Ejercicio de prueba",
+                  descripcion: tema.ejercicios.items[pruebaItem].descripcion || "",
+                  codigoInicial: tema.ejercicios.items[pruebaItem].codigoInicial || "",
+                  entrada: tema.ejercicios.items[pruebaItem].entrada || "",
+                  salidaEsperada: tema.ejercicios.items[pruebaItem].salidaEsperada || "",
+                  validar: ({ salida }) =>
+                    salidaCoincide(
+                      salida,
+                      tema.ejercicios.items[pruebaItem].salidaEsperada
+                    ),
+                }}
+              />
+            </div>
+          </section>
         </div>
       )}
     </div>

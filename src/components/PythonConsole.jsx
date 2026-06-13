@@ -10,7 +10,7 @@ import {
   XCircle,
 } from "lucide-react"
 
-function PythonConsole({ ejercicio, onFinish }) {
+function PythonConsole({ ejercicio, onFinish, modoPrueba = false }) {
   const [pyodide, setPyodide] = useState(null)
   const [codigo, setCodigo] = useState(ejercicio.codigoInicial || "")
   const [salida, setSalida] = useState("")
@@ -189,8 +189,32 @@ pyodide.setStdin({
           Revisa tu código y vuelve a intentarlo.
         </div>
       )}
+
+      {modoPrueba && resultado === "incorrecto" && (
+        <div className="console-diff">
+          <div className="console-diff-col">
+            <span className="console-diff-label">Salida esperada</span>
+            <pre>{mostrarTexto(ejercicio.salidaEsperada)}</pre>
+          </div>
+          <div className="console-diff-col">
+            <span className="console-diff-label">Lo que obtuviste</span>
+            <pre>{mostrarTexto(salida)}</pre>
+          </div>
+        </div>
+      )}
     </section>
   )
+}
+
+// Hace visibles los espacios al final de línea (·) y las líneas en blanco,
+// para que el profesor vea exactamente qué diferencia hizo fallar la comparación.
+function mostrarTexto(texto) {
+  if (!texto) return "(vacío)"
+  return texto
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((linea) => linea.replace(/[ \t]+$/u, (espacios) => "·".repeat(espacios.length)))
+    .join("\n")
 }
 
 export default PythonConsole

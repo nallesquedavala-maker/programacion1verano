@@ -1,5 +1,6 @@
 import { useState } from "react"
 import PythonConsole from "../PythonConsole"
+import { salidaCoincide } from "../../utils/validarSalida"
 
 // Ejercicios de consola definidos por la profesora en el editor de contenido.
 // Cada item: { titulo, descripcion, codigoInicial, entrada, salidaEsperada }
@@ -12,9 +13,8 @@ function EjerciciosPythonGenerico({ items, onFinish }) {
     descripcion: item.descripcion || "",
     codigoInicial: item.codigoInicial || "",
     entrada: item.entrada || "",
-    validar: ({ salida }) =>
-      salida.trim().replace(/\r\n/g, "\n") ===
-      (item.salidaEsperada || "").trim().replace(/\r\n/g, "\n"),
+    salidaEsperada: item.salidaEsperada || "",
+    validar: ({ salida }) => salidaCoincide(salida, item.salidaEsperada),
   }))
 
   const ejercicio = ejercicios[actual]
