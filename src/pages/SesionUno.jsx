@@ -61,7 +61,8 @@ const temasSesion1 = [
     id: 3,
     titulo: "Pseudocódigo",
     Icono: FileCode2,
-    gamma: "PEGA_AQUI_TU_LINK_DE_GAMMA",
+    gamma:
+      "https://gamma.app/docs/Dominando-la-Logica-Introduccion-al-Pseudocodigo-dlgccbavklnpxvx?mode=doc",
   },
   {
     id: 4,
