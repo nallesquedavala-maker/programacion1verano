@@ -107,14 +107,21 @@ function SesionGenerica() {
     )
   }
 
+  function temaTieneQuiz(tema) {
+    return (tema.quiz || []).length > 0
+  }
+
   function temaCompletado(idTema) {
     const tema = temas.find((t) => t.id === idTema)
     if (!tema) return false
 
-    if (!quizCompletado(idTema)) return false
-    if (!temaTieneEjercicios(tema)) return true
+    // Solo se exige lo que el tema realmente tiene. Un tema sin quiz ni
+    // ejercicios (p. ej. solo microclase) se da por completado automáticamente
+    // para no bloquear las actividades finales de la sesión.
+    if (temaTieneQuiz(tema) && !quizCompletado(idTema)) return false
+    if (temaTieneEjercicios(tema) && !ejerciciosCompletados(idTema)) return false
 
-    return ejerciciosCompletados(idTema)
+    return true
   }
 
   function temaBloqueado(idTema) {
@@ -459,6 +466,7 @@ function SesionGenerica() {
             const bloqueado = temaBloqueado(tema.id)
             const completado = temaCompletado(tema.id)
             const tieneEjercicios = temaTieneEjercicios(tema)
+            const tieneQuiz = temaTieneQuiz(tema)
             const IconoTema = obtenerIcono(tema.icono)
 
             return (
@@ -493,18 +501,27 @@ function SesionGenerica() {
                 </div>
 
                 <div className="mission-checklist">
-                  <span
-                    className={`check-item${
-                      quizCompletado(tema.id) ? " done" : ""
-                    }`}
-                  >
-                    {quizCompletado(tema.id) ? (
-                      <CheckCircle2 aria-hidden="true" />
-                    ) : (
-                      <Brain aria-hidden="true" />
-                    )}
-                    Quiz
-                  </span>
+                  {tieneQuiz && (
+                    <span
+                      className={`check-item${
+                        quizCompletado(tema.id) ? " done" : ""
+                      }`}
+                    >
+                      {quizCompletado(tema.id) ? (
+                        <CheckCircle2 aria-hidden="true" />
+                      ) : (
+                        <Brain aria-hidden="true" />
+                      )}
+                      Quiz
+                    </span>
+                  )}
+
+                  {!tieneQuiz && !tieneEjercicios && (
+                    <span className="check-item done">
+                      <BookOpen aria-hidden="true" />
+                      Solo microclase
+                    </span>
+                  )}
 
                   {tieneEjercicios && (
                     <span
@@ -532,26 +549,28 @@ function SesionGenerica() {
                     Microclase
                   </button>
 
-                  <button
-                    className={`btn ${
-                      quizCompletado(tema.id) ? "btn-success" : "btn-primary"
-                    }`}
-                    disabled={bloqueado || (tema.quiz || []).length === 0}
-                    onClick={() => {
-                      setTemaActivo(tema.id)
-                      setSeccionActiva("quiz")
-                    }}
-                  >
-                    {quizCompletado(tema.id) ? (
-                      <>
-                        <CheckCircle2 aria-hidden="true" /> Quiz completado
-                      </>
-                    ) : (
-                      <>
-                        <Brain aria-hidden="true" /> Quiz
-                      </>
-                    )}
-                  </button>
+                  {tieneQuiz && (
+                    <button
+                      className={`btn ${
+                        quizCompletado(tema.id) ? "btn-success" : "btn-primary"
+                      }`}
+                      disabled={bloqueado}
+                      onClick={() => {
+                        setTemaActivo(tema.id)
+                        setSeccionActiva("quiz")
+                      }}
+                    >
+                      {quizCompletado(tema.id) ? (
+                        <>
+                          <CheckCircle2 aria-hidden="true" /> Quiz completado
+                        </>
+                      ) : (
+                        <>
+                          <Brain aria-hidden="true" /> Quiz
+                        </>
+                      )}
+                    </button>
+                  )}
 
                   {tieneEjercicios && (
                     <button
