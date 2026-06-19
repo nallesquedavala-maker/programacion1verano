@@ -129,7 +129,12 @@ function contenidoAFormulario(contenido) {
       }
     : minijuegoVacio()
 
-  return { temas, proyecto, minijuego }
+  const documentos = (contenido?.documentos || []).map((doc) => ({
+    nombre: doc.nombre || "",
+    url: doc.url || "",
+  }))
+
+  return { temas, proyecto, minijuego, documentos }
 }
 
 function formularioAContenido(formulario) {
@@ -184,11 +189,91 @@ function formularioAContenido(formulario) {
       }
     : null
 
+  const documentos = (formulario.documentos || [])
+    .map((doc) => ({ nombre: doc.nombre.trim(), url: doc.url.trim() }))
+    .filter((doc) => doc.url)
+
   return {
     temas,
     ...(proyecto ? { proyecto } : {}),
     ...(minijuego ? { minijuego } : {}),
+    ...(documentos.length > 0 ? { documentos } : {}),
   }
+}
+
+function SeccionDocumentos({ documentos, setFormulario }) {
+  return (
+    <>
+      <h3 className="editor-section-title">
+        Documentos para la clase (opcional)
+      </h3>
+
+      <div className="editor-note">
+        <Info aria-hidden="true" />
+        Pega el enlace de cada documento (Google Drive, PDF, etc.) con un
+        nombre. Aparecerán en la sesión para que los alumnos los descarguen. Si
+        no agregas ninguno, no se muestra nada.
+      </div>
+
+      <div className="editor-card">
+        {documentos.map((doc, indiceDoc) => (
+          <div key={indiceDoc} className="editor-question-header">
+            <input
+              className="text-input"
+              value={doc.nombre}
+              onChange={(e) =>
+                setFormulario((previo) => ({
+                  ...previo,
+                  documentos: previo.documentos.map((d, i) =>
+                    i === indiceDoc ? { ...d, nombre: e.target.value } : d
+                  ),
+                }))
+              }
+              placeholder="Nombre (Ej. Guía de la sesión)"
+            />
+            <input
+              className="text-input"
+              value={doc.url}
+              onChange={(e) =>
+                setFormulario((previo) => ({
+                  ...previo,
+                  documentos: previo.documentos.map((d, i) =>
+                    i === indiceDoc ? { ...d, url: e.target.value } : d
+                  ),
+                }))
+              }
+              placeholder="https://drive.google.com/..."
+            />
+            <button
+              className="icon-button danger"
+              onClick={() =>
+                setFormulario((previo) => ({
+                  ...previo,
+                  documentos: previo.documentos.filter((_, i) => i !== indiceDoc),
+                }))
+              }
+              aria-label="Eliminar documento"
+            >
+              <Trash2 aria-hidden="true" />
+            </button>
+          </div>
+        ))}
+
+        <button
+          className="btn btn-outline btn-sm"
+          onClick={() =>
+            setFormulario((previo) => ({
+              ...previo,
+              documentos: [...previo.documentos, { nombre: "", url: "" }],
+            }))
+          }
+        >
+          <Plus aria-hidden="true" />
+          Agregar documento
+        </button>
+      </div>
+    </>
+  )
 }
 
 function EditorSesion() {
@@ -200,6 +285,7 @@ function EditorSesion() {
     temas: [],
     proyecto: { titulo: "", descripcion: "", requisitos: "" },
     minijuego: minijuegoVacio(),
+    documentos: [],
   })
   const [temaAbierto, setTemaAbierto] = useState(null)
   const [probandoMinijuego, setProbandoMinijuego] = useState(false)
@@ -602,8 +688,14 @@ function EditorSesion() {
                   />
                 </label>
               </div>
+
             </>
           )}
+
+          <SeccionDocumentos
+            documentos={formulario.documentos}
+            setFormulario={setFormulario}
+          />
         </>
       )}
 

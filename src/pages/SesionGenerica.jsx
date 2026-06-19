@@ -16,6 +16,7 @@ import {
   Flame,
   ArrowLeft,
   Inbox,
+  FileDown,
 } from "lucide-react"
 import Quiz from "../components/Quiz"
 import MinijuegoCodigo from "../components/MinijuegoCodigo"
@@ -79,6 +80,7 @@ function SesionGenerica() {
   const temas = sesion?.contenido?.temas || []
   const proyecto = sesion?.contenido?.proyecto || null
   const minijuegoConfig = sesion?.contenido?.minijuego || null
+  const documentos = sesion?.contenido?.documentos || []
   const progresoTemas = datos.temas || {}
   const minijuego = datos.minijuego || null
 
@@ -299,6 +301,32 @@ function SesionGenerica() {
             <span className="ring-label">Calificación global</span>
           </div>
         </section>
+
+        {documentos.length > 0 && (
+          <section className="materials-card" aria-label="Materiales de la sesión">
+            <h2 className="materials-title">
+              <FileDown aria-hidden="true" />
+              Materiales de la sesión
+            </h2>
+            <p className="materials-subtitle">
+              Documentos que tu profesora compartió para esta sesión.
+            </p>
+            <div className="materials-list">
+              {documentos.map((doc, indice) => (
+                <a
+                  key={indice}
+                  className="material-item"
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FileDown aria-hidden="true" />
+                  <span>{doc.nombre || "Documento"}</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
 
         {seccionActiva && (
           // No se cierra al hacer clic fuera, para no perder el avance del

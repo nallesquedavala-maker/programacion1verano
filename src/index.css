@@ -803,6 +803,68 @@ button:disabled {
 }
 
 /* ============ BOSS / FINAL CARDS ============ */
+.materials-card {
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+}
+
+.materials-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 18px;
+}
+
+.materials-title svg {
+  width: 22px;
+  height: 22px;
+  color: var(--primary, #6d28d9);
+}
+
+.materials-subtitle {
+  margin: 6px 0 16px;
+  color: var(--text-muted, #6b7280);
+  font-size: 14px;
+}
+
+.materials-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.material-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--surface-soft, #f9fafb);
+  color: var(--text, #111827);
+  font-weight: 600;
+  font-size: 14.5px;
+  text-decoration: none;
+  transition: border-color var(--duration-base, 0.2s),
+    transform var(--duration-base, 0.2s);
+}
+
+.material-item:hover {
+  border-color: var(--primary, #6d28d9);
+  transform: translateY(-1px);
+}
+
+.material-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--primary, #6d28d9);
+}
+
 .special-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

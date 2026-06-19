@@ -24,6 +24,7 @@ import {
   PartyPopper,
   Flame,
   ArrowLeft,
+  FileDown,
 } from "lucide-react"
 import Quiz from "../components/Quiz"
 import EjerciciosClase from "../components/EjerciciosClase"
@@ -40,6 +41,7 @@ import ProgressBar from "../components/ProgressBar"
 import ProgressRing from "../components/ProgressRing"
 import TopBar from "../components/TopBar"
 import { bloques } from "../data/bloques"
+import { supabase } from "../lib/supabase"
 import { useProgresoSesion } from "../hooks/useProgresoSesion"
 import { calificacionDeTemas } from "../utils/calificaciones"
 
@@ -105,8 +107,29 @@ const temasSesion1 = [
 function SesionUno() {
   const [seccionActiva, setSeccionActiva] = useState(null)
   const [temaActivo, setTemaActivo] = useState(1)
+  const [documentos, setDocumentos] = useState([])
   const { datos, actualizarDatos, cargando, estadoGuardado } =
     useProgresoSesion(1)
+
+  useEffect(() => {
+    let activo = true
+
+    async function cargarDocumentos() {
+      const { data } = await supabase
+        .from("sesiones")
+        .select("contenido")
+        .eq("id", 1)
+        .single()
+
+      if (activo) setDocumentos(data?.contenido?.documentos || [])
+    }
+
+    cargarDocumentos()
+
+    return () => {
+      activo = false
+    }
+  }, [])
 
   const progresoTemas = datos.temas || {}
   const minijuegoSesion1 = datos.minijuego || null
@@ -355,6 +378,32 @@ function SesionUno() {
             <span className="ring-label">Calificación global</span>
           </div>
         </section>
+
+        {documentos.length > 0 && (
+          <section className="materials-card" aria-label="Materiales de la sesión">
+            <h2 className="materials-title">
+              <FileDown aria-hidden="true" />
+              Materiales de la sesión
+            </h2>
+            <p className="materials-subtitle">
+              Documentos que tu profesora compartió para esta sesión.
+            </p>
+            <div className="materials-list">
+              {documentos.map((doc, indice) => (
+                <a
+                  key={indice}
+                  className="material-item"
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FileDown aria-hidden="true" />
+                  <span>{doc.nombre || "Documento"}</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
 
         {seccionActiva && (
           // No se cierra al hacer clic fuera, para no perder el avance del
