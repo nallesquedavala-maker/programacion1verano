@@ -186,6 +186,7 @@ function SesionGenerica() {
   }
 
   const temaActual = temas.find((tema) => tema.id === temaActivo)
+  const numeroTemaActivo = temas.findIndex((t) => t.id === temaActivo) + 1
   const progresoTemaActivo = obtenerProgresoTema(temaActivo)
   const temasCompletados = contarTemasCompletados()
   const calificacionGlobal = calificacionDeTemas(progresoTemas) ?? 0
@@ -361,9 +362,9 @@ function SesionGenerica() {
                 <div>
                   <p className="modal-header-eyebrow">
                     {seccionActiva === "quiz"
-                      ? `Misión ${temaActivo} · Quiz`
+                      ? `Misión ${numeroTemaActivo} · Quiz`
                       : seccionActiva === "ejercicios"
-                      ? `Misión ${temaActivo} · Ejercicios`
+                      ? `Misión ${numeroTemaActivo} · Ejercicios`
                       : seccionActiva === "minijuego"
                       ? "Boss Level"
                       : "Proyecto"}
@@ -516,7 +517,7 @@ function SesionGenerica() {
                 </div>
 
                 <div>
-                  <p className="mission-number">Misión {tema.id}</p>
+                  <p className="mission-number">Misión {indice + 1}</p>
                   <h2>{tema.titulo}</h2>
                 </div>
 

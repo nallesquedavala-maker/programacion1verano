@@ -852,7 +852,7 @@ function TemaEditor({ tema, indice, abierto, onToggle, onChange, onEliminar }) {
           <IconoTema aria-hidden="true" />
         </span>
         <span className="editor-card-title">
-          Misión {tema.id}: {tema.titulo || "(sin título)"}
+          Misión {indice + 1}: {tema.titulo || "(sin título)"}
         </span>
         <span className="editor-card-meta">
           {tema.quiz.length} preguntas ·{" "}
