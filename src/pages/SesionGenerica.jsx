@@ -30,6 +30,36 @@ import { useProgresoSesion } from "../hooks/useProgresoSesion"
 import { calificacionDeTemas } from "../utils/calificaciones"
 import { obtenerIcono } from "../data/iconos"
 
+// Un ejercicio se considera vacío (y no se muestra al alumno) si todos sus
+// campos relevantes están en blanco. Suele pasar al pulsar "Agregar ejercicio"
+// y dejarlo sin llenar.
+function itemEjercicioTieneContenido(tipo, item) {
+  if (tipo === "ordenar") {
+    return Boolean(
+      (item.titulo || "").trim() ||
+        (item.descripcion || "").trim() ||
+        (item.escena || "").trim() ||
+        (item.ordenCorrecto || []).length > 0 ||
+        (item.tarjetas || []).length > 0
+    )
+  }
+
+  return Boolean(
+    (item.titulo || "").trim() ||
+      (item.descripcion || "").trim() ||
+      (item.codigoInicial || "").trim() ||
+      (item.entrada || "").trim() ||
+      (item.salidaEsperada || "").trim()
+  )
+}
+
+function itemsValidosDeTema(tema) {
+  if (!tema?.ejercicios || tema.ejercicios.tipo === "ninguno") return []
+  return (tema.ejercicios.items || []).filter((item) =>
+    itemEjercicioTieneContenido(tema.ejercicios.tipo, item)
+  )
+}
+
 function SesionGenerica() {
   const { id } = useParams()
   const sesionId = Number(id)
@@ -97,11 +127,7 @@ function SesionGenerica() {
   }
 
   function temaTieneEjercicios(tema) {
-    return (
-      tema.ejercicios &&
-      tema.ejercicios.tipo !== "ninguno" &&
-      (tema.ejercicios.items || []).length > 0
-    )
+    return itemsValidosDeTema(tema).length > 0
   }
 
   function temaTieneQuiz(tema) {
@@ -231,10 +257,12 @@ function SesionGenerica() {
       return <p>Este tema no tiene ejercicios.</p>
     }
 
+    const itemsValidos = itemsValidosDeTema(temaActual)
+
     if (temaActual.ejercicios.tipo === "python") {
       return (
         <EjerciciosPythonGenerico
-          items={temaActual.ejercicios.items}
+          items={itemsValidos}
           onFinish={(resultado) => guardarEjercicios(temaActivo, resultado)}
         />
       )
@@ -242,7 +270,7 @@ function SesionGenerica() {
 
     return (
       <EjerciciosOrdenarGenerico
-        items={temaActual.ejercicios.items}
+        items={itemsValidos}
         onFinish={(resultado) => guardarEjercicios(temaActivo, resultado)}
       />
     )
