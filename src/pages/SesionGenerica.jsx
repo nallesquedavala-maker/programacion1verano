@@ -306,12 +306,9 @@ function SesionGenerica() {
         </section>
 
         {seccionActiva && (
-          <div
-            className="modal-overlay"
-            onClick={(evento) => {
-              if (evento.target === evento.currentTarget) cerrarPanel()
-            }}
-          >
+          // No se cierra al hacer clic fuera, para no perder el avance del
+          // quiz/ejercicios por un clic accidental. Se cierra solo con el ✕.
+          <div className="modal-overlay">
             <section
               className="modal-panel"
               role="dialog"
