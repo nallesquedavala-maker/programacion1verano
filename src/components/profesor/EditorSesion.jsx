@@ -12,6 +12,7 @@ import {
   Info,
   Play,
   X,
+  Upload,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { NOMBRES_ICONOS, obtenerIcono } from "../../data/iconos"
@@ -201,7 +202,43 @@ function formularioAContenido(formulario) {
   }
 }
 
-function SeccionDocumentos({ documentos, setFormulario }) {
+function SeccionDocumentos({ documentos, setFormulario, sesionId }) {
+  const [subiendo, setSubiendo] = useState(false)
+  const [errorSubida, setErrorSubida] = useState(null)
+
+  async function subirArchivo(evento) {
+    const archivo = evento.target.files?.[0]
+    evento.target.value = "" // permite volver a subir el mismo archivo
+    if (!archivo) return
+
+    setSubiendo(true)
+    setErrorSubida(null)
+
+    const nombreLimpio = archivo.name.replace(/[^a-zA-Z0-9._-]/g, "_")
+    const ruta = `sesion-${sesionId}/${Date.now()}-${nombreLimpio}`
+
+    const { error } = await supabase.storage
+      .from("documentos")
+      .upload(ruta, archivo, { cacheControl: "3600", upsert: false })
+
+    if (error) {
+      setErrorSubida(error.message)
+      setSubiendo(false)
+      return
+    }
+
+    const { data } = supabase.storage.from("documentos").getPublicUrl(ruta)
+
+    setFormulario((previo) => ({
+      ...previo,
+      documentos: [
+        ...previo.documentos,
+        { nombre: archivo.name.replace(/\.[^.]+$/, ""), url: data.publicUrl },
+      ],
+    }))
+    setSubiendo(false)
+  }
+
   return (
     <>
       <h3 className="editor-section-title">
@@ -210,10 +247,17 @@ function SeccionDocumentos({ documentos, setFormulario }) {
 
       <div className="editor-note">
         <Info aria-hidden="true" />
-        Pega el enlace de cada documento (Google Drive, PDF, etc.) con un
-        nombre. Aparecerán en la sesión para que los alumnos los descarguen. Si
-        no agregas ninguno, no se muestra nada.
+        Sube un archivo desde tu computadora o pega el enlace de un documento
+        (Google Drive, PDF, etc.). Aparecerán en la sesión para que los alumnos
+        los descarguen. Si no agregas ninguno, no se muestra nada.
       </div>
+
+      {errorSubida && (
+        <div className="console-feedback error" role="status">
+          <AlertCircle aria-hidden="true" />
+          No se pudo subir el archivo: {errorSubida}
+        </div>
+      )}
 
       <div className="editor-card">
         {documentos.map((doc, indiceDoc) => (
@@ -259,18 +303,41 @@ function SeccionDocumentos({ documentos, setFormulario }) {
           </div>
         ))}
 
-        <button
-          className="btn btn-outline btn-sm"
-          onClick={() =>
-            setFormulario((previo) => ({
-              ...previo,
-              documentos: [...previo.documentos, { nombre: "", url: "" }],
-            }))
-          }
-        >
-          <Plus aria-hidden="true" />
-          Agregar documento
-        </button>
+        <div className="editor-docs-actions">
+          <label
+            className={`btn btn-primary btn-sm${subiendo ? " is-loading" : ""}`}
+          >
+            {subiendo ? (
+              <>
+                <span className="spinner" aria-hidden="true" /> Subiendo...
+              </>
+            ) : (
+              <>
+                <Upload aria-hidden="true" /> Subir archivo
+              </>
+            )}
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg"
+              onChange={subirArchivo}
+              disabled={subiendo}
+              hidden
+            />
+          </label>
+
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() =>
+              setFormulario((previo) => ({
+                ...previo,
+                documentos: [...previo.documentos, { nombre: "", url: "" }],
+              }))
+            }
+          >
+            <Plus aria-hidden="true" />
+            Agregar enlace
+          </button>
+        </div>
       </div>
     </>
   )
@@ -695,6 +762,7 @@ function EditorSesion() {
           <SeccionDocumentos
             documentos={formulario.documentos}
             setFormulario={setFormulario}
+            sesionId={sesionId}
           />
         </>
       )}

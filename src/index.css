@@ -803,6 +803,17 @@ button:disabled {
 }
 
 /* ============ BOSS / FINAL CARDS ============ */
+.editor-docs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.btn.is-loading {
+  pointer-events: none;
+  opacity: 0.85;
+}
+
 .materials-card {
   background: var(--surface, #fff);
   border: 1px solid var(--border, #e5e7eb);

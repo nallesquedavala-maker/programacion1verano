@@ -116,6 +116,30 @@ drop policy if exists progreso_update on public.progreso;
 create policy progreso_update on public.progreso
   for update using (user_id = auth.uid());
 
+-- ---------- STORAGE: documentos de clase ----------
+-- Bucket público donde el profesor sube PDFs y otros archivos para la clase.
+insert into storage.buckets (id, name, public)
+values ('documentos', 'documentos', true)
+on conflict (id) do nothing;
+
+-- Lectura pública: cualquiera con el enlace puede ver/descargar el archivo.
+drop policy if exists documentos_lectura on storage.objects;
+create policy documentos_lectura on storage.objects
+  for select using (bucket_id = 'documentos');
+
+-- Subir / actualizar / borrar archivos: solo el profesor.
+drop policy if exists documentos_insert on storage.objects;
+create policy documentos_insert on storage.objects
+  for insert with check (bucket_id = 'documentos' and public.es_profesor());
+
+drop policy if exists documentos_update on storage.objects;
+create policy documentos_update on storage.objects
+  for update using (bucket_id = 'documentos' and public.es_profesor());
+
+drop policy if exists documentos_delete on storage.objects;
+create policy documentos_delete on storage.objects
+  for delete using (bucket_id = 'documentos' and public.es_profesor());
+
 -- ---------- Sembrar las 10 sesiones ----------
 insert into public.sesiones (id, titulo, subtitulo, publicada) values
   (1,  'Sesión 1',  'Fundamentos + primeros programas en Python', true),
