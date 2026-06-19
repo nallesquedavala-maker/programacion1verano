@@ -197,17 +197,12 @@ function SesionUno() {
   useEffect(() => {
     if (!seccionActiva) return
 
+    // Bloquea el scroll del fondo mientras el panel está abierto. No se cierra
+    // con Escape para no perder el avance del quiz/ejercicios por accidente.
     document.body.style.overflow = "hidden"
-
-    function manejarTecla(evento) {
-      if (evento.key === "Escape") setSeccionActiva(null)
-    }
-
-    window.addEventListener("keydown", manejarTecla)
 
     return () => {
       document.body.style.overflow = ""
-      window.removeEventListener("keydown", manejarTecla)
     }
   }, [seccionActiva])
 
