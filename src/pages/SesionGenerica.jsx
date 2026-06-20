@@ -26,6 +26,7 @@ import ProgressBar from "../components/ProgressBar"
 import ProgressRing from "../components/ProgressRing"
 import TopBar from "../components/TopBar"
 import { supabase } from "../lib/supabase"
+import { useAuth } from "../context/AuthContext"
 import { useProgresoSesion } from "../hooks/useProgresoSesion"
 import { calificacionDeTemas } from "../utils/calificaciones"
 import { obtenerIcono } from "../data/iconos"
@@ -63,6 +64,7 @@ function itemsValidosDeTema(tema) {
 function SesionGenerica() {
   const { id } = useParams()
   const sesionId = Number(id)
+  const { esProfesor } = useAuth()
 
   const [sesion, setSesion] = useState(null)
   const [cargandoSesion, setCargandoSesion] = useState(true)
@@ -148,6 +150,10 @@ function SesionGenerica() {
   }
 
   function temaBloqueado(idTema) {
+    // El profesor tiene todo desbloqueado para poder mostrar el contenido sin
+    // tener que completar quizzes ni ejercicios.
+    if (esProfesor) return false
+
     const indice = temas.findIndex((t) => t.id === idTema)
     if (indice <= 0) return false
 
@@ -159,10 +165,12 @@ function SesionGenerica() {
   }
 
   function minijuegoBloqueado() {
+    if (esProfesor) return false
     return !temasCompletosTodos()
   }
 
   function proyectoBloqueado() {
+    if (esProfesor) return false
     // El proyecto necesita todos los temas terminados; y si la sesión tiene
     // minijuego configurado, también haber terminado el minijuego.
     if (!temasCompletosTodos()) return true

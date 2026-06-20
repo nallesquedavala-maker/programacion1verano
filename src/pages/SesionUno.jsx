@@ -42,6 +42,7 @@ import ProgressRing from "../components/ProgressRing"
 import TopBar from "../components/TopBar"
 import { bloques } from "../data/bloques"
 import { supabase } from "../lib/supabase"
+import { useAuth } from "../context/AuthContext"
 import { useProgresoSesion } from "../hooks/useProgresoSesion"
 import { calificacionDeTemas } from "../utils/calificaciones"
 
@@ -105,6 +106,7 @@ const temasSesion1 = [
 ]
 
 function SesionUno() {
+  const { esProfesor } = useAuth()
   const [seccionActiva, setSeccionActiva] = useState(null)
   const [temaActivo, setTemaActivo] = useState(1)
   const [documentos, setDocumentos] = useState([])
@@ -155,6 +157,10 @@ function SesionUno() {
   }
 
   function temaBloqueado(idTema) {
+    // El profesor tiene todo desbloqueado para poder mostrar el contenido sin
+    // tener que completar quizzes ni ejercicios.
+    if (esProfesor) return false
+
     if (idTema === 1) {
       return false
     }
@@ -163,10 +169,12 @@ function SesionUno() {
   }
 
   function minijuegoBloqueado() {
+    if (esProfesor) return false
     return !temaCompletado(9)
   }
 
   function proyectoBloqueado() {
+    if (esProfesor) return false
     return !minijuegoSesion1
   }
 
