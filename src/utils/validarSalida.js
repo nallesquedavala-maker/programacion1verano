@@ -35,10 +35,39 @@ export function dividirVariantes(salidaEsperada) {
   return limpios.length > 0 ? limpios : [""]
 }
 
-// Aprueba si la salida obtenida coincide con CUALQUIERA de las salidas válidas.
+function quitarAcentos(texto) {
+  return texto.normalize("NFD").replace(/[̀-ͯ]/g, "")
+}
+
+// Normalización TOLERANTE para calificar: además de lo anterior, ignora
+// diferencias cosméticas que no cambian el sentido de la salida, para no
+// reprobar a un alumno cuyo resultado es correcto. Ignora:
+// - mayúsculas/minúsculas        (Hola = hola)
+// - tildes/acentos               (eligio = eligió)
+// - espacios de más entre palabras y al inicio/fin de cada línea
+// - puntuación al final de la línea (punto, coma, signos, etc.)
+// - líneas en blanco de sobra
+export function normalizarParaComparar(texto) {
+  return (texto || "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((linea) =>
+      quitarAcentos(linea)
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/[.,;:!¡¿?]+$/u, "")
+        .trim()
+    )
+    .filter((linea) => linea !== "")
+    .join("\n")
+}
+
+// Aprueba si la salida obtenida coincide con CUALQUIERA de las salidas válidas,
+// usando la comparación tolerante.
 export function salidaCoincide(salida, salidaEsperada) {
-  const obtenida = normalizarSalida(salida)
+  const obtenida = normalizarParaComparar(salida)
   return dividirVariantes(salidaEsperada).some(
-    (variante) => normalizarSalida(variante) === obtenida
+    (variante) => normalizarParaComparar(variante) === obtenida
   )
 }
