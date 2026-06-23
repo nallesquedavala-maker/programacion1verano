@@ -13,6 +13,7 @@ import {
   Play,
   X,
   Upload,
+  FileJson,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { NOMBRES_ICONOS, obtenerIcono } from "../../data/iconos"
@@ -343,6 +344,124 @@ function SeccionDocumentos({ documentos, setFormulario, sesionId }) {
   )
 }
 
+// ----- Importación de contenido desde JSON (agente externo) -----
+
+function normalizarQuizJson(quiz) {
+  if (!Array.isArray(quiz)) return []
+  return quiz
+    .map((p) => {
+      const opciones = Array.isArray(p.opciones)
+        ? p.opciones.map((o) => String(o))
+        : []
+      let correcta = 0
+      if (typeof p.correcta === "number") {
+        correcta = p.correcta
+      } else if (typeof p.correcta === "string") {
+        const idx = opciones.findIndex((o) => o === p.correcta)
+        correcta = idx >= 0 ? idx : 0
+      }
+      const opcionesSeguras =
+        opciones.length >= 2 ? opciones : [...opciones, "", ""].slice(0, 2)
+      return {
+        pregunta: String(p.pregunta || ""),
+        opciones: opcionesSeguras,
+        correcta: Math.min(Math.max(correcta, 0), opcionesSeguras.length - 1),
+        explicacion: String(p.explicacion || ""),
+      }
+    })
+    .filter((p) => p.pregunta.trim())
+}
+
+function normalizarEjerciciosJson(ejercicios) {
+  const tipo = ejercicios?.tipo
+
+  if (tipo === "python") {
+    return {
+      tipo: "python",
+      items: (ejercicios.items || []).map((it) => ({
+        titulo: String(it.titulo || ""),
+        descripcion: String(it.descripcion || ""),
+        codigoInicial: String(it.codigoInicial || ""),
+        entrada: String(it.entrada || ""),
+        salidaEsperada: String(it.salidaEsperada || ""),
+      })),
+    }
+  }
+
+  if (tipo === "ordenar") {
+    return {
+      tipo: "ordenar",
+      items: (ejercicios.items || []).map((it) => {
+        const pasos = Array.isArray(it.pasos)
+          ? it.pasos
+          : Array.isArray(it.ordenCorrecto)
+          ? it.ordenCorrecto
+          : String(it.pasos || "").split("\n")
+        return {
+          titulo: String(it.titulo || ""),
+          escena: String(it.escena || ""),
+          descripcion: String(it.descripcion || ""),
+          icono: String(it.icono || "ListOrdered"),
+          pasos: pasos.map((p) => String(p)).join("\n"),
+        }
+      }),
+    }
+  }
+
+  return { tipo: "ninguno", items: [] }
+}
+
+function jsonAFormulario(json) {
+  const temasRaw = Array.isArray(json) ? json : json?.temas
+  if (!Array.isArray(temasRaw)) {
+    throw new Error(
+      'El JSON debe ser un objeto con una lista "temas" (o una lista de temas).'
+    )
+  }
+
+  const temas = temasRaw.map((t, i) => ({
+    id: i + 1,
+    titulo: String(t.titulo || `Tema ${i + 1}`),
+    icono: String(t.icono || "Code2"),
+    gamma: String(t.gamma || ""),
+    quiz: normalizarQuizJson(t.quiz),
+    ejercicios: normalizarEjerciciosJson(t.ejercicios || {}),
+  }))
+
+  const proyecto = json?.proyecto
+    ? {
+        titulo: String(json.proyecto.titulo || ""),
+        descripcion: String(json.proyecto.descripcion || ""),
+        requisitos: Array.isArray(json.proyecto.requisitos)
+          ? json.proyecto.requisitos.join("\n")
+          : String(json.proyecto.requisitos || ""),
+      }
+    : { titulo: "", descripcion: "", requisitos: "" }
+
+  const minijuego = json?.minijuego
+    ? {
+        titulo: String(json.minijuego.titulo || ""),
+        descripcion: String(json.minijuego.descripcion || ""),
+        codigoInicial: String(json.minijuego.codigoInicial || ""),
+        entrada: String(json.minijuego.entrada || ""),
+        salidaEsperada: String(json.minijuego.salidaEsperada || ""),
+      }
+    : minijuegoVacio()
+
+  const documentos = Array.isArray(json?.documentos)
+    ? json.documentos.map((d) => ({
+        nombre: String(d.nombre || ""),
+        url: String(d.url || ""),
+      }))
+    : []
+
+  return {
+    formulario: { temas, proyecto, minijuego, documentos },
+    titulo: json?.titulo != null ? String(json.titulo) : null,
+    subtitulo: json?.subtitulo != null ? String(json.subtitulo) : null,
+  }
+}
+
 function EditorSesion() {
   const [sesionId, setSesionId] = useState(2)
   const [titulo, setTitulo] = useState("")
@@ -359,6 +478,50 @@ function EditorSesion() {
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
+  const [importando, setImportando] = useState(false)
+  const [jsonTexto, setJsonTexto] = useState("")
+  const [errorImport, setErrorImport] = useState(null)
+
+  function leerArchivoJson(evento) {
+    const archivo = evento.target.files?.[0]
+    evento.target.value = ""
+    if (!archivo) return
+    const lector = new FileReader()
+    lector.onload = () => setJsonTexto(String(lector.result || ""))
+    lector.readAsText(archivo)
+  }
+
+  function importarJson() {
+    setErrorImport(null)
+
+    let parsed
+    try {
+      parsed = JSON.parse(jsonTexto)
+    } catch (e) {
+      setErrorImport(`El texto no es un JSON válido: ${e.message}`)
+      return
+    }
+
+    try {
+      const resultado = jsonAFormulario(parsed)
+      setFormulario(resultado.formulario)
+      if (resultado.titulo !== null) setTitulo(resultado.titulo)
+      if (resultado.subtitulo !== null) setSubtitulo(resultado.subtitulo)
+      setTemaAbierto(null)
+      setImportando(false)
+      setJsonTexto("")
+      const totalEjercicios = resultado.formulario.temas.reduce(
+        (suma, t) => suma + (t.ejercicios?.items?.length || 0),
+        0
+      )
+      setMensaje({
+        tipo: "exito",
+        texto: `Contenido importado: ${resultado.formulario.temas.length} tema(s) y ${totalEjercicios} ejercicio(s). Revísalo y pulsa "Guardar sesión".`,
+      })
+    } catch (e) {
+      setErrorImport(e.message)
+    }
+  }
 
   useEffect(() => {
     let activo = true
@@ -459,6 +622,19 @@ function EditorSesion() {
         </label>
 
         <div className="editor-toolbar-actions">
+          {!esSesionUno && (
+            <button
+              className="btn btn-outline"
+              onClick={() => {
+                setErrorImport(null)
+                setImportando(true)
+              }}
+              disabled={cargando}
+            >
+              <FileJson aria-hidden="true" /> Importar JSON
+            </button>
+          )}
+
           <button
             className={`btn ${publicada ? "btn-success" : "btn-outline"}`}
             onClick={() => setPublicada(!publicada)}
@@ -765,6 +941,84 @@ function EditorSesion() {
             sesionId={sesionId}
           />
         </>
+      )}
+
+      {importando && (
+        <div
+          className="modal-overlay"
+          onClick={(evento) => {
+            if (evento.target === evento.currentTarget) setImportando(false)
+          }}
+        >
+          <section className="modal-panel" role="dialog" aria-modal="true">
+            <button
+              className="panel-close"
+              onClick={() => setImportando(false)}
+              aria-label="Cerrar importación"
+            >
+              <X aria-hidden="true" />
+            </button>
+
+            <header className="modal-header">
+              <div className="modal-header-icon">
+                <FileJson aria-hidden="true" />
+              </div>
+              <div>
+                <p className="modal-header-eyebrow">
+                  Importar contenido — Sesión {sesionId}
+                </p>
+                <h2>Pega o sube el JSON de tu agente</h2>
+              </div>
+            </header>
+
+            <div className="modal-body">
+              <div className="editor-note">
+                <Info aria-hidden="true" />
+                Esto <strong>reemplaza</strong> el contenido de la Sesión{" "}
+                {sesionId} con el del JSON. Después podrás revisarlo y editarlo;
+                no se guarda hasta que pulses "Guardar sesión".
+              </div>
+
+              {errorImport && (
+                <div className="console-feedback error" role="status">
+                  <AlertCircle aria-hidden="true" />
+                  {errorImport}
+                </div>
+              )}
+
+              <label className="field">
+                <span className="field-label">Contenido JSON</span>
+                <textarea
+                  className="text-area mono"
+                  rows={12}
+                  value={jsonTexto}
+                  onChange={(e) => setJsonTexto(e.target.value)}
+                  placeholder='{ "temas": [ ... ] }'
+                />
+              </label>
+
+              <div className="editor-docs-actions">
+                <label className="btn btn-outline btn-sm">
+                  <Upload aria-hidden="true" /> Subir archivo .json
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={leerArchivoJson}
+                    hidden
+                  />
+                </label>
+
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={importarJson}
+                  disabled={!jsonTexto.trim()}
+                >
+                  <FileJson aria-hidden="true" /> Cargar contenido
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
       )}
 
       {probandoMinijuego && (
